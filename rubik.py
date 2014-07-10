@@ -1,15 +1,20 @@
 import re
 from random import randint as r
-MOVE_REGEX = re.compile("^(R|L|U|D|F|B|M|E|S|x|y|z|r|l|u|d|f|b|Rw|Lw|Dw|Uw|Fw|Bw)['2]?$")
 
 FACE_MOVES = ["U","D","F","B","L","R"]
 SLICE_MOVES = ["M","E","S"]
 WEDGE_MOVES = ["u", "d", "f", "b", "l", "r", "Uw", "Dw", "Fw", "Bw", "Lw", "Rw"]
 ROTATIONS = ["x","y","z"]
 move_dict = {"U":0,"L":1,"F":2,"R":3,"B":4,"D":5, "E":0, "M":1, "S": 2, "x":0, "y":1, "z":2, "u":0, "d":1, "f":2, "b":3, "l":4, "r":5}
-
+ALL_MOVES = FACE_MOVES + SLICE_MOVES + WEDGE_MOVES + ROTATIONS
+regex_str = "^("+"|".join(ALL_MOVES)+")['2]?$"
+MOVE_REGEX = re.compile(regex_str)
 
 class Algorithm(object):
+	"""
+	Algorithm objects are created 
+
+	"""
 	def __init__(self,alg):
 		assert(valid_alg(alg))
 		moves = alg.split()
@@ -86,6 +91,10 @@ class Move(object):
 
 
 class Cube(object):
+	"""
+	A 3-dimensional array representation of a Rubik's cube. Act on it by calling c.apply_alg(alg) where alg is an Algorithm object. Additionally, check if it is solved with c.solved(). 
+	"""
+
 	def __init__(self): 
 		self.cube = [[[i for _ in xrange(3)] for _ in xrange(3)] for i in xrange(6)]
 
@@ -98,7 +107,7 @@ class Cube(object):
 				return False
 		return True
 
-	def cycle_stickers(self, *args):
+	def _cycle_stickers(self, *args):
 		t = self.cube[args[len(args)-1][0]][args[len(args)-1][1]][args[len(args)-1][2]]
 		loop = range(len(args))
 		loop.reverse()
@@ -107,7 +116,7 @@ class Cube(object):
 				self.cube[args[i][0]][args[i][1]][args[i][2]] = self.cube[args[i-1][0]][args[i-1][1]][args[i-1][2]]
 		self.cube[args[0][0]][args[0][1]][args[0][2]] = t
 
-	def cycle_rows(self, *args):
+	def _cycle_rows(self, *args):
 		t = self.cube[args[len(args)-1][0]][args[len(args)-1][1]]		
 		loop = range(len(args))
 		loop.reverse()
@@ -116,54 +125,54 @@ class Cube(object):
 				self.cube[args[i][0]][args[i][1]] = self.cube[args[i-1][0]][args[i-1][1]]
 		self.cube[args[0][0]][args[0][1]] = t
 
-	def rotate_face(self, face):
+	def _rotate_face(self, face):
 		#rotate the stickers on the face
-		self.cycle_stickers([face,0,0],[face,0,2],[face,2,2],[face,2,0])
-		self.cycle_stickers([face,0,1],[face,1,2],[face,2,1],[face,1,0])
+		self._cycle_stickers([face,0,0],[face,0,2],[face,2,2],[face,2,0])
+		self._cycle_stickers([face,0,1],[face,1,2],[face,2,1],[face,1,0])
 
 		#U
 		if face==0:
-			self.cycle_rows([4,0],[3,0],[2,0],[1,0])
+			self._cycle_rows([4,0],[3,0],[2,0],[1,0])
 		#L
 		elif face==1:
-			self.cycle_stickers([0,0,0],[2,0,0],[5,0,0],[4,2,2])
-			self.cycle_stickers([0,1,0],[2,1,0],[5,1,0],[4,1,2])
-			self.cycle_stickers([0,2,0],[2,2,0],[5,2,0],[4,0,2])
+			self._cycle_stickers([0,0,0],[2,0,0],[5,0,0],[4,2,2])
+			self._cycle_stickers([0,1,0],[2,1,0],[5,1,0],[4,1,2])
+			self._cycle_stickers([0,2,0],[2,2,0],[5,2,0],[4,0,2])
 		#F
 		elif face==2:				
-			self.cycle_stickers([0,2,0],[3,0,0],[5,0,2],[1,2,2])
-			self.cycle_stickers([0,2,1],[3,1,0],[5,0,1],[1,1,2])
-			self.cycle_stickers([0,2,2],[3,2,0],[5,0,0],[1,0,2])
+			self._cycle_stickers([0,2,0],[3,0,0],[5,0,2],[1,2,2])
+			self._cycle_stickers([0,2,1],[3,1,0],[5,0,1],[1,1,2])
+			self._cycle_stickers([0,2,2],[3,2,0],[5,0,0],[1,0,2])
 		#R
 		elif face==3:
-			self.cycle_stickers([0,2,2],[4,0,0],[5,2,2],[2,2,2])
-			self.cycle_stickers([0,1,2],[4,1,0],[5,1,2],[2,1,2])
-			self.cycle_stickers([0,0,2],[4,2,0],[5,0,2],[2,0,2])
+			self._cycle_stickers([0,2,2],[4,0,0],[5,2,2],[2,2,2])
+			self._cycle_stickers([0,1,2],[4,1,0],[5,1,2],[2,1,2])
+			self._cycle_stickers([0,0,2],[4,2,0],[5,0,2],[2,0,2])
 		#B
 		elif face==4:
-			self.cycle_stickers([0,0,0],[1,2,0],[5,2,2],[3,0,2])
-			self.cycle_stickers([0,0,1],[1,1,0],[5,2,1],[3,1,2])
-			self.cycle_stickers([0,0,2],[1,0,0],[5,2,0],[3,2,2])
+			self._cycle_stickers([0,0,0],[1,2,0],[5,2,2],[3,0,2])
+			self._cycle_stickers([0,0,1],[1,1,0],[5,2,1],[3,1,2])
+			self._cycle_stickers([0,0,2],[1,0,0],[5,2,0],[3,2,2])
 		#D
 		elif face==5:
-			self.cycle_rows([1,2],[2,2],[3,2],[4,2])
+			self._cycle_rows([1,2],[2,2],[3,2],[4,2])
 
 	def slice(self, axis):
 		#E
 		if axis==0:
-			self.cycle_rows([1,1],[2,1],[3,1],[4,1])
+			self._cycle_rows([1,1],[2,1],[3,1],[4,1])
 
 		#M
 		elif axis==1:
-			self.cycle_stickers([0,0,1],[2,0,1],[5,0,1],[4,2,1])
-			self.cycle_stickers([0,1,1],[2,1,1],[5,1,1],[4,1,1])
-			self.cycle_stickers([0,2,1],[2,2,1],[5,2,1],[4,0,1])
+			self._cycle_stickers([0,0,1],[2,0,1],[5,0,1],[4,2,1])
+			self._cycle_stickers([0,1,1],[2,1,1],[5,1,1],[4,1,1])
+			self._cycle_stickers([0,2,1],[2,2,1],[5,2,1],[4,0,1])
 
 		#S	
 		elif axis==2:
-			self.cycle_stickers([0,1,0],[1,2,1],[5,1,2],[3,0,1])
-			self.cycle_stickers([0,1,1],[1,1,1],[5,1,1],[3,1,1])
-			self.cycle_stickers([0,1,2],[1,0,1],[5,1,0],[3,2,1])
+			self._cycle_stickers([0,1,0],[1,2,1],[5,1,2],[3,0,1])
+			self._cycle_stickers([0,1,1],[1,1,1],[5,1,1],[3,1,1])
+			self._cycle_stickers([0,1,2],[1,0,1],[5,1,0],[3,2,1])
 
 	def rotate(self, axis):
 		#x
@@ -215,7 +224,7 @@ class Cube(object):
 	def apply_move(self, move):
 		if move.letter in FACE_MOVES:
 			for _ in range(move.num):
-				self.rotate_face(move_dict[move.letter])
+				self._rotate_face(move_dict[move.letter])
 		elif move.letter in WEDGE_MOVES:
 			for _ in range(move.num):
 				self.rotate_wedge(move_dict[move.letter])
@@ -227,6 +236,10 @@ class Cube(object):
 				self.rotate(move_dict[move.letter])
 
 def valid_alg(alg_str):
+	"""
+	Check if a string is a correctly formed Rubik's cube algorithm written in standard notation
+	"""
+
 	moves = alg_str.split()
 	for move in moves:
 		if not MOVE_REGEX.match(move):
@@ -235,17 +248,16 @@ def valid_alg(alg_str):
 	return True
 
 # Based on function from http://www.speedsolving.com/forum/showthread.php?25460-My-python-one-liner-scramble-generator/page21
-def gen_scramble(l):
+def gen_scramble(num_moves):
+	"""
+	Generates a num_moves length scramble by repeatedly adding random moves (from the set URFBLD) with a random suffix ( '2) and checking to make sure we don't repeat the same move twice or repeat three moves in a row on the same axis. 
+	"""
+	
 	scramble = ""
 	m=b=9
-	for u in range(l):
+	for u in range(num_moves):
 		c=b;b=m
 		while c+b-4 and m==c or m==b:
 			m=r(0,5)
 		scramble += "URFBLD"[m]+" '2"[r(0,2)]+" "
 	return scramble.replace("  "," ")[:-1]
-
-if __name__ == "__main__":
-	c = Cube()
-	a = Algorithm("R U R'")
-

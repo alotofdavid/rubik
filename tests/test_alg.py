@@ -1,3 +1,5 @@
+from rubik import *
+
 def test_rotations():
 	cube = Cube()
 	alg = Algorithm("R z2 L' U x2 D'")
