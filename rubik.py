@@ -7,13 +7,13 @@ WEDGE_MOVES = ["u", "d", "f", "b", "l", "r", "Uw", "Dw", "Fw", "Bw", "Lw", "Rw"]
 ROTATIONS = ["x","y","z"]
 move_dict = {"U":0,"L":1,"F":2,"R":3,"B":4,"D":5, "E":0, "M":1, "S": 2, "x":0, "y":1, "z":2, "u":0, "d":1, "f":2, "b":3, "l":4, "r":5}
 ALL_MOVES = FACE_MOVES + SLICE_MOVES + WEDGE_MOVES + ROTATIONS
-regex_str = "^("+"|".join(ALL_MOVES)+")['2]?$"
+regex_str = "^("+"|".join(ALL_MOVES)+")['|2|3]{0,2}$"
+##Replaced ? with {0,2}. This is not completely right because it can do U22
 MOVE_REGEX = re.compile(regex_str)
-
+FACES = {'U': 0, 'L': 1, 'F': 2, 'R': 3, 'B':4, 'D':5}
 class Algorithm(object):
 	"""
 	Algorithm objects are created 
-
 	"""
 	def __init__(self,alg):
 		assert(valid_alg(alg))
@@ -63,12 +63,18 @@ class Move(object):
 			if rest =="2":
 				self.num = 2
 		elif (len(move)==3):
-			self.letter = move[:1].lower()
-			rest = move[2:]
-			if rest == "'":
-				self.num = 3
-			if rest =="2":
+			rest = move[1:]
+			if rest == '2\'':
+				#added by me -Weston
+				self.letter = move[:1]
 				self.num = 2
+			else:
+				self.letter = move[:1].lower()
+				rest = move[2:]
+				if rest == "'":
+					self.num = 3
+				if rest =="2":
+					self.num = 2
 
 	def __repr__(self):
 		if self.num == 1:
@@ -92,7 +98,9 @@ class Move(object):
 
 class Cube(object):
 	"""
-	A 3-dimensional array representation of a Rubik's cube. Act on it by calling c.apply_alg(alg) where alg is an Algorithm object. Additionally, check if it is solved with c.solved(). 
+	A 3-dimensional array representation of a Rubik's cube. Act on it by calling 
+	c.apply_alg(alg) where alg is an Algorithm object. Additionally, check if it 
+	is solved with c.solved(). 
 	"""
 
 	def __init__(self): 
@@ -106,6 +114,156 @@ class Cube(object):
 			if len(set(self.cube[face][0]).union(set(self.cube[face][1])).union(set(self.cube[face][2]))) > 1:
 				return False
 		return True
+
+
+	##All the f2L stuff concerns last slot
+
+	def f2l_solved(self):
+		if self.slot_corner_solved() and self.slot_edge_solved():
+			return True
+		return False
+
+	def ll_oriented(self):
+		face = FACES['U']
+		if len(set(self.cube[face][0]).union(set(self.cube[face][1])).union(set(self.cube[face][2]))) > 1:
+			return False
+		return True
+
+	def ll_edges_oriented(self):
+		face = FACES['U']
+		correct_color = self.cube[face][1][1]
+		if self.cube[face][0][1] != correct_color:
+			return False
+		if self.cube[face][1][0] != correct_color:
+			return False
+		if self.cube[face][1][2] != correct_color:
+			return False
+		if self.cube[face][2][1] != correct_color:
+			return False
+		return True
+
+	def last_5_edges_oriented(self):
+		if self.ll_edges_oriented():
+			return True
+		face = FACES['U']
+		correct_color = self.cube[face][1][1]
+		counter = 0
+		if self.cube[face][0][1] == correct_color:
+			counter += 1
+		if self.cube[face][1][0] == correct_color:
+			counter += 1
+		if self.cube[face][1][2] == correct_color:
+			counter += 1
+		if self.cube[face][2][1] == correct_color:
+			counter += 1
+		if counter == 3 and self.cube[FACES['F']][1][2] == correct_color:
+			return True;
+
+		return False
+
+
+	def slot_corner_solved(self):
+		if not self.f2l_minus_1_solved:
+			return False
+		face = FACES['F']
+		if self.cube[face][1][1] != self.cube[face][2][2]:
+			return False
+		face = FACES['R']
+		if self.cube[face][1][1] != self.cube[face][2][0]:
+			return False
+		face = FACES['D']
+		if self.cube[face][1][1] != self.cube[face][0][2]:
+			return False
+		return True
+
+
+
+	def three_move_insert_exists(self):
+		if self.join_insert():
+			return True
+		result = False
+		for i in range(4):
+			self.apply_alg(Algorithm('R U\' R\''))
+			if self.f2l_solved():
+				result = True
+		self.apply_alg(Algorithm('R U R\' U'))
+		return result
+
+
+
+	def join_insert(self):
+		result = False
+		for i in range(4):
+			self.apply_alg(Algorithm('R U R\''))
+			if self.f2l_solved():
+				result = True
+			self.apply_alg(Algorithm('R U\' R\' U'))
+		return result
+
+	def slot_edge_solved(self):
+		if not self.f2l_minus_1_solved():
+			return False
+		face = FACES['F']
+		if self.cube[face][1][1] != self.cube[face][1][2]:
+			return False
+		face = FACES['R']
+		if self.cube[face][1][1] != self.cube[face][1][0]:
+			return False
+		return True
+
+
+	def f2l_minus_1_solved(self):
+
+		face = FACES['D']
+		correct_color = self.cube[face][1][1]
+		if not self.bottom_two_rows_correct_color(face):
+			return False
+		if self.cube[face][0][0] != correct_color:
+			return False
+		if self.cube[face][0][1] != correct_color:
+			return False
+		if not self.bottom_two_rows_correct_color(FACES['B']):
+			return False
+		if not self.bottom_two_rows_correct_color(FACES['L']):
+			return False	
+		face = FACES['F']
+		correct_color = self.cube[face][1][1]
+		if self.cube[face][1][0] != correct_color:
+			return False
+		if self.cube[face][2][0] != correct_color:
+			return False
+		if self.cube[face][2][1] != correct_color:
+			return False
+		face = FACES['R']
+		correct_color = self.cube[face][1][1]
+		if self.cube[face][1][2] != correct_color:
+			return False
+		if self.cube[face][2][1] != correct_color:
+			return False
+		if self.cube[face][2][2] != correct_color:
+			return False
+		return True
+
+	def bottom_two_rows_correct_color(self, face):
+		correct_color = self.cube[face][1][1]
+		for i in range(3):
+			if self.cube[face][1][i] != correct_color:
+				return False
+		for i in range(3):
+			if self.cube[face][2][i] != correct_color:
+				return False
+		return True
+
+
+
+
+
+	def dump(self):
+		for face in range(6):
+			print '---'
+			print self.cube[face]
+			print '----'
+
 
 	def _cycle_stickers(self, *args):
 		t = self.cube[args[len(args)-1][0]][args[len(args)-1][1]][args[len(args)-1][2]]
@@ -248,11 +406,7 @@ def valid_alg(alg_str):
 	return True
 
 # Based on function from http://www.speedsolving.com/forum/showthread.php?25460-My-python-one-liner-scramble-generator/page21
-def gen_scramble(num_moves):
-	"""
-	Generates a num_moves length scramble by repeatedly adding random moves (from the set URFBLD) with a random suffix ( '2) and checking to make sure we don't repeat the same move twice or repeat three moves in a row on the same axis. 
-	"""
-	
+def gen_scramble(num_moves):	
 	scramble = ""
 	m=b=9
 	for u in range(num_moves):

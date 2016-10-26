@@ -13,3 +13,7 @@ def test_algorithms():
 	cube.apply_alg(alg)
 	cube.apply_alg(sol)
 	assert(cube.solved())
+
+
+test_rotations()
+test_algorithms()
